@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.middleware.alert.console.autoconfigure.AlertConsoleAutoConfiguration

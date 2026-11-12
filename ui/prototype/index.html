@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>告警管理 - 原型</title>
+<style>
+  :root {
+    --bg: #f2f5fa;
+    --card: #ffffff;
+    --line: #e5eaf2;
+    --text: #1f2a3d;
+    --muted: #7b879b;
+    --primary: #2563eb;
+    --primary-soft: #eaf1ff;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --purple: #7c3aed;
+    --sidebar: #111827;
+    --sidebar-2: #1f2937;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+  }
+  button, input, select, textarea { font: inherit; }
+  .app { display: flex; min-height: 100%; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    flex: 0 0 220px;
+    background: var(--sidebar);
+    color: #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand { display: flex; gap: 10px; align-items: center; padding: 4px 8px 22px; }
+  .brand-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: #fff; display: grid; place-items: center;
+    font-weight: 800; font-size: 16px;
+  }
+  .brand-title { color: #f8fafc; font-weight: 700; font-size: 16px; }
+  .brand-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .nav { display: flex; flex-direction: column; gap: 4px; }
+  .nav-item {
+    border: 0; background: transparent; color: #94a3b8;
+    text-align: left; padding: 11px 12px; border-radius: 9px;
+    cursor: pointer; display: flex; align-items: center; gap: 10px;
+    transition: background .15s, color .15s;
+  }
+  .nav-item:hover { background: var(--sidebar-2); color: #e2e8f0; }
+  .nav-item.active { background: #1d4ed8; color: #fff; }
+  .nav-icon { width: 18px; text-align: center; }
+  .sidebar-foot {
+    margin-top: auto; padding: 12px; border-radius: 10px;
+    background: var(--sidebar-2); color: #94a3b8; font-size: 12px;
+    line-height: 1.7;
+  }
+  .sidebar-foot strong { color: #f8fafc; }
+
+  /* Main */
+  .main { flex: 1; min-width: 0; padding: 22px 26px 32px; }
+  .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+  .topbar h1 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
+  .topbar p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+  .top-actions { display: flex; gap: 8px; align-items: center; }
+  .env-tag {
+    background: #fff; border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 11px; color: #475569; font-size: 12px;
+  }
+
+  /* Common */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .btn {
+    border: 1px solid var(--line); background: #fff; color: #334155;
+    padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:hover { border-color: #cbd5e1; background: #f8fafc; }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .btn.primary:hover { background: #1d4ed8; }
+  .btn.ghost { background: transparent; }
+  .btn.small { padding: 5px 9px; font-size: 12px; }
+  .hint { color: var(--muted); font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge.green { background: #ecfdf5; color: #047857; }
+  .badge.orange { background: #fffbeb; color: #b45309; }
+  .badge.red { background: #fef2f2; color: #b91c1c; }
+  .badge.blue { background: #eff6ff; color: #1d4ed8; }
+  .badge.gray { background: #f1f5f9; color: #475569; }
+  .badge.purple { background: #f5f3ff; color: #6d28d9; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .table-wrap { overflow: auto; }
+  .table { width: 100%; border-collapse: collapse; }
+  .table th, .table td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .table th { background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .table tr:last-child td { border-bottom: 0; }
+  .table tbody tr:hover td { background: #fbfdff; }
+  .mono { font-family: Menlo, Consolas, monospace; font-size: 12px; }
+  .empty { color: var(--muted); padding: 22px; text-align: center; }
+
+  /* Config page */
+  .toolbar { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 14px 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar-left, .toolbar-right { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+  .toolbar-left label { color: var(--muted); font-size: 12px; }
+  .toolbar select { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; min-width: 180px; }
+  .config-layout { display: flex; gap: 14px; align-items: flex-start; }
+  .service-list { width: 230px; flex: 0 0 230px; padding: 10px; }
+  .card-title { padding: 8px 10px 12px; font-weight: 700; font-size: 13px; color: #475569; display: flex; justify-content: space-between; }
+  .service-item {
+    border: 1px solid transparent; border-radius: 10px; padding: 10px 11px;
+    cursor: pointer; margin-bottom: 4px; transition: all .15s;
+  }
+  .service-item:hover { background: #f8fafc; }
+  .service-item.active { background: var(--primary-soft); border-color: #bfdbfe; }
+  .service-name { font-weight: 700; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .service-meta { color: var(--muted); font-size: 11px; margin-top: 5px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .config-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .config-card { padding: 0 0 6px; overflow: hidden; }
+  .config-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
+  .config-head h2 { margin: 0; font-size: 18px; }
+  .config-head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+  .group-tabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 14px 4px; }
+  .group-tab {
+    border: 0; background: transparent; color: #64748b; padding: 7px 10px; border-radius: 7px;
+    cursor: pointer; font-size: 12px;
+  }
+  .group-tab:hover { background: #f8fafc; }
+  .group-tab.active { background: var(--primary-soft); color: var(--primary); font-weight: 700; }
+  .config-table td { vertical-align: middle; }
+  .config-key { font-family: Menlo, Consolas, monospace; font-size: 12px; font-weight: 600; }
+  .config-desc { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .config-input, .config-select {
+    width: 100%; border: 1px solid var(--line); border-radius: 7px;
+    padding: 7px 9px; background: #fff;
+  }
+  .config-input:focus, .config-select:focus { outline: 2px solid #bfdbfe; border-color: #93c5fd; }
+  .refresh-card { padding: 6px 0 12px; }
+  .refresh-item { display: flex; justify-content: space-between; gap: 10px; padding: 10px 18px; border-top: 1px solid #f1f5f9; }
+  .refresh-item:first-child { border-top: 0; }
+
+  /* Alerts page */
+  .filters { padding: 14px 16px; margin-bottom: 14px; }
+  .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .filter-item { display: flex; align-items: center; gap: 7px; }
+  .filter-item label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .filter-item select, .filter-item input {
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; background: #fff;
+  }
+  .filter-item input[type="text"] { width: 200px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--line); background: #fff; color: #475569;
+    border-radius: 999px; padding: 5px 10px; font-size: 12px; cursor: pointer;
+  }
+  .chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .stat { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat-label { color: var(--muted); font-size: 12px; }
+  .stat-value { font-size: 24px; font-weight: 800; margin-top: 5px; }
+  .alert-title { font-weight: 600; max-width: 420px; }
+  .alert-sub { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .pager { display: flex; justify-content: flex-end; gap: 8px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
+  .link { color: var(--primary); cursor: pointer; text-decoration: none; }
+
+  /* Drawer */
+  .drawer-mask { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, .35); z-index: 20; }
+  .drawer-mask.show { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: -560px; width: 560px; max-width: 92vw; height: 100%;
+    background: #fff; z-index: 21; transition: right .2s ease; box-shadow: -12px 0 40px rgba(15, 23, 42, .16);
+    display: flex; flex-direction: column;
+  }
+  .drawer.show { right: 0; }
+  .drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  .drawer-head h3 { margin: 0; font-size: 16px; }
+  .drawer-body { padding: 16px 18px; overflow: auto; }
+  .detail-grid { display: grid; grid-template-columns: 110px 1fr; gap: 10px 12px; font-size: 13px; }
+  .detail-grid dt { color: var(--muted); }
+  .detail-grid dd { margin: 0; word-break: break-all; }
+  .code-block { background: #0f172a; color: #dbeafe; border-radius: 9px; padding: 12px; font-family: Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; }
+
+  /* Toast */
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+    background: #0f172a; color: #fff; border-radius: 9px; padding: 10px 16px;
+    opacity: 0; pointer-events: none; transition: all .2s; z-index: 30;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 1100px) {
+    .service-list { display: none; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .sidebar { width: 64px; flex-basis: 64px; padding: 14px 8px; }
+    .brand-text, .nav-label, .sidebar-foot { display: none; }
+    .nav-item { justify-content: center; }
+    .main { padding: 16px; }
+    .filter-item input[type="text"] { width: 140px; }
+  }
+  /* Dashboard */
+  .dash { background: #0b1220; border-radius: 14px; padding: 20px; color: #dbeafe; }
+  .dash-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+  .dash-title { font-size: 24px; font-weight: 800; color: #f8fafc; letter-spacing: .04em; }
+  .dash-sub { color: #7c93b5; font-size: 12px; margin-top: 5px; }
+  .dash-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .dash-range { display: flex; gap: 2px; background: #12213d; border: 1px solid #1e3a5f; border-radius: 8px; padding: 2px; }
+  .dash-range-btn { background: transparent; border: 0; color: #7c93b5; padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .dash-range-btn:hover { color: #dbeafe; }
+  .dash-range-btn.active { background: #1d4ed8; color: #fff; }
+  .dash-time { font-family: Menlo, Consolas, monospace; color: #93c5fd; font-size: 12px; }
+  .dash-btn { background: #12213d; border: 1px solid #1e3a5f; color: #bfdbfe; padding: 6px 10px; border-radius: 7px; cursor: pointer; font-size: 12px; }
+  .dash-btn:hover { background: #183154; }
+  .dash-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+  .dash-kpi { background: linear-gradient(180deg, #12213d, #0f1a2e); border: 1px solid #1e3a5f; border-radius: 10px; padding: 12px 14px; }
+  .dash-kpi .label { color: #7c93b5; font-size: 11px; }
+  .dash-kpi .value { color: #f8fafc; font-size: 26px; font-weight: 800; margin-top: 4px; }
+  .dash-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
+  .dash-card { background: #0f1a2e; border: 1px solid #1e2d4a; border-radius: 10px; padding: 14px; min-height: 170px; }
+  .dash-card.span-2 { grid-column: span 2; }
+  .dash-card-title { display: flex; justify-content: space-between; gap: 10px; color: #cfe3ff; font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+  .dash-card-title span { color: #5f7fa8; font-weight: 400; font-size: 11px; }
+  .trend-chart { display: flex; align-items: flex-end; gap: 4px; height: 150px; }
+  .trend-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; }
+  .trend-col .seg { min-height: 2px; border-radius: 2px 2px 0 0; }
+  .seg.critical { background: #ef4444; }
+  .seg.error { background: #f59e0b; }
+  .seg.warn { background: #3b82f6; }
+  .trend-legend { display: flex; gap: 14px; color: #7c93b5; font-size: 11px; margin-top: 8px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  .dot.critical { background: #ef4444; }
+  .dot.error { background: #f59e0b; }
+  .dot.warn { background: #3b82f6; }
+  .type-list, .bar-list, .latest-list { display: flex; flex-direction: column; gap: 8px; }
+  .type-row, .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .type-name, .bar-name { width: 112px; color: #a9c1e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .type-track, .bar-track { flex: 1; height: 8px; background: #12213d; border-radius: 999px; overflow: hidden; }
+  .type-track i, .bar-track i { display: block; height: 100%; background: #3b82f6; border-radius: 999px; }
+  .type-count, .bar-value { width: 44px; text-align: right; color: #7c93b5; }
+  .latest-list { max-height: 250px; overflow: auto; }
+  .latest-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid #15243d; font-size: 12px; }
+  .latest-item:last-child { border-bottom: 0; }
+  .latest-time { width: 42px; color: #5f7fa8; }
+  .latest-main { flex: 1; min-width: 0; }
+  .latest-title { color: #dbeafe; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .latest-meta { color: #5f7fa8; font-size: 11px; margin-top: 2px; }
+  .health-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .health-item { background: #12213d; border: 1px solid #1e3a5f; border-radius: 7px; padding: 8px; display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: #a9c1e0; }
+  .health-item b { color: #f8fafc; }
+  .resource-list { display: flex; flex-direction: column; gap: 12px; }
+  .resource-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #a9c1e0; }
+  .resource-row span { width: 56px; }
+  .resource-row b { width: 36px; text-align: right; color: #93c5fd; }
+  .progress { flex: 1; height: 7px; background: #12213d; border-radius: 999px; overflow: hidden; }
+  .progress i { display: block; height: 100%; background: #3b82f6; border-radius: 999px; }
+  @media (max-width: 1100px) {
+    .dash-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .dash-grid { grid-template-columns: 1fr; }
+    .dash-card.span-2 { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">A</div>
+      <div class="brand-text">
+        <div class="brand-title">告警管理</div>
+        <div class="brand-sub">Alert Console</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item" data-page="dashboard" onclick="switchPage('dashboard')">
+        <span class="nav-icon">▦</span><span class="nav-label">告警大屏</span>
+      </button>
+      <button class="nav-item active" data-page="config" onclick="switchPage('config')">
+        <span class="nav-icon">⚙</span><span class="nav-label">告警配置</span>
+      </button>
+      <button class="nav-item" data-page="alerts" onclick="switchPage('alerts')">
+        <span class="nav-icon">☰</span><span class="nav-label">告警列表</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      当前环境<br><strong>PROD · 项目组共享库</strong><br>8 个服务
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">告警配置</h1>
+        <p id="pageSubtitle">按服务查看和调整告警参数，保存后可刷新指定服务</p>
+      </div>
+      <div class="top-actions">
+        <span class="env-tag">共享库 · 8 个服务</span>
+        <button class="btn ghost" onclick="showToast('已刷新服务与配置数据（原型模拟）')">刷新数据</button>
+      </div>
+    </header>
+
+    <!-- 告警大屏 -->
+    <section id="page-dashboard" class="page">
+      <div class="dash">
+        <div class="dash-head">
+          <div>
+            <div class="dash-title">告警监控大屏</div>
+            <div class="dash-sub">PROD · 项目组共享库 · 8 个服务 · 模拟数据</div>
+          </div>
+          <div class="dash-actions">
+            <div class="dash-range">
+              <button class="dash-range-btn" data-range="1h" onclick="setDashRange('1h')">1h</button>
+              <button class="dash-range-btn" data-range="6h" onclick="setDashRange('6h')">6h</button>
+              <button class="dash-range-btn active" data-range="24h" onclick="setDashRange('24h')">24h</button>
+              <button class="dash-range-btn" data-range="7d" onclick="setDashRange('7d')">7d</button>
+            </div>
+            <span class="dash-time" id="dashTime"></span>
+            <button class="dash-btn" onclick="showToast('大屏已刷新（原型模拟）')">刷新</button>
+            <button class="dash-btn" id="dashRefreshBtn" onclick="toggleAutoRefresh()">自动刷新 30s</button>
+            <button class="dash-btn" onclick="toggleFullscreen()">全屏</button>
+          </div>
+        </div>
+
+        <div class="dash-kpis" id="dashKpis"></div>
+
+        <div class="dash-grid">
+          <div class="dash-card span-2">
+            <div class="dash-card-title"><span id="dashTrendTitle">24 小时告警趋势</span> <span>按级别堆叠</span></div>
+            <div class="trend-chart" id="dashTrend"></div>
+            <div class="trend-legend">
+              <span><i class="dot critical"></i>CRITICAL</span>
+              <span><i class="dot error"></i>ERROR</span>
+              <span><i class="dot warn"></i>WARN</span>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">告警类型分布</div>
+            <div class="type-list" id="dashTypes"></div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">服务告警 Top 10</div>
+            <div class="bar-list" id="dashServices"></div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">实时告警流 <span>最近 8 条</span></div>
+            <div class="latest-list" id="dashLatest"></div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">服务健康矩阵</div>
+            <div class="health-grid" id="dashHealth"></div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">慢请求 Top URI</div>
+            <div class="bar-list" id="dashSlow"></div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">资源水位 <span>M2/M3 预留</span></div>
+            <div class="resource-list">
+              <div class="resource-row"><span>连接池</span><div class="progress"><i style="width:42%"></i></div><b>42%</b></div>
+              <div class="resource-row"><span>线程池</span><div class="progress"><i style="width:28%"></i></div><b>28%</b></div>
+              <div class="resource-row"><span>堆内存</span><div class="progress"><i style="width:61%"></i></div><b>61%</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 告警配置 -->
+    <section id="page-config" class="page active">
+      <div class="card toolbar">
+        <div class="toolbar-left">
+          <label>当前服务</label>
+          <select id="serviceSelect" onchange="selectService(this.value)"></select>
+          <span class="hint" id="serviceMeta"></span>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn" onclick="saveConfig(false)">保存</button>
+          <button class="btn primary" onclick="saveConfig(true)">保存并刷新</button>
+          <button class="btn ghost" onclick="refreshService()">只刷新该服务</button>
+        </div>
+      </div>
+
+      <div class="config-layout">
+        <aside class="card service-list">
+          <div class="card-title">服务列表 <span class="hint" id="serviceCount"></span></div>
+          <div id="serviceList"></div>
+        </aside>
+
+        <div class="config-main">
+          <div class="card config-card">
+            <div class="config-head">
+              <div>
+                <h2 id="configServiceName">xk-report</h2>
+                <p id="configServiceDesc">配置版本 12 · 2 个实例</p>
+              </div>
+              <div><span class="badge green" id="configStatus">已初始化</span></div>
+            </div>
+            <div class="group-tabs" id="groupTabs"></div>
+            <div class="table-wrap">
+              <table class="table config-table">
+                <thead>
+                  <tr>
+                    <th>配置项</th>
+                    <th style="width:280px">值</th>
+                    <th>当前实例生效值</th>
+                    <th>类型</th>
+                    <th>标记</th>
+                  </tr>
+                </thead>
+                <tbody id="configBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card refresh-card">
+            <div class="card-title">刷新结果</div>
+            <div id="refreshResults" class="empty">保存并刷新后展示每个实例的结果</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 告警列表 -->
+    <section id="page-alerts" class="page">
+      <div class="card filters">
+        <div class="filter-row">
+          <div class="filter-item" style="align-items:flex-start">
+            <label>服务</label>
+            <div class="chips" id="serviceChips"></div>
+          </div>
+          <div class="filter-item">
+            <label>类型</label>
+            <select id="alertType" onchange="renderAlerts()">
+              <option value="">全部</option>
+              <option>BIZ_EXCEPTION</option>
+              <option>SLOW_REQUEST</option>
+              <option>NULL_POINTER</option>
+              <option>STACK_OVERFLOW</option>
+              <option>HTTP_OUTBOUND</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>级别</label>
+            <select id="alertLevel" onchange="renderAlerts()">
+              <option value="">全部</option>
+              <option>CRITICAL</option>
+              <option>ERROR</option>
+              <option>WARN</option>
+              <option>INFO</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>时间</label>
+            <select id="alertRange" onchange="renderAlerts()">
+              <option value="24h">最近 24 小时</option>
+              <option value="7d">最近 7 天</option>
+              <option value="all">全部</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>关键字</label>
+            <input id="alertKeyword" type="text" placeholder="标题 / URI / traceId"
+                   onkeyup="if(event.key==='Enter') renderAlerts()">
+          </div>
+          <button class="btn primary small" onclick="renderAlerts()">查询</button>
+          <button class="btn small" onclick="resetFilters()">重置</button>
+        </div>
+      </div>
+
+      <div class="stats" id="alertStats"></div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:150px">时间</th>
+                <th style="width:120px">服务</th>
+                <th style="width:140px">类型</th>
+                <th style="width:90px">级别</th>
+                <th>标题</th>
+                <th style="width:180px">URI</th>
+                <th style="width:80px">耗时</th>
+                <th style="width:90px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="alertBody"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <span class="hint" id="pageInfo"></span>
+          <button class="btn small" onclick="prevPage()" id="prevBtn">上一页</button>
+          <button class="btn small" onclick="nextPage()" id="nextBtn">下一页</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="drawerMask" class="drawer-mask" onclick="closeDrawer()"></div>
+<aside id="drawer" class="drawer">
+  <div class="drawer-head">
+    <h3>告警详情</h3>
+    <button class="btn ghost small" onclick="closeDrawer()">关闭</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<script>
+  /* ============ 模拟数据 ============ */
+  const GROUPS = [
+    { key: 'ALL', label: '全部' },
+    { key: 'CONSOLE', label: '控制台' },
+    { key: 'WRITE', label: '写入' },
+    { key: 'DEDUP', label: '去重' },
+    { key: 'RATE_LIMIT', label: '限流' },
+    { key: 'BIZ', label: '业务异常' },
+    { key: 'ERROR', label: '异常/堆栈' },
+    { key: 'SLOW_REQUEST', label: '慢请求' }
+  ];
+
+  const CONFIG_TEMPLATE = [
+    { key: 'runtime.enabled', value: 'true', type: 'BOOL', group: 'CONSOLE', desc: '运行时总开关，关闭后停止采集和写入', restart: false },
+    { key: 'console.instances', value: '10.117.32.11:10009,10.117.32.12:10009', type: 'LIST', group: 'CONSOLE', desc: '刷新时逐个调用的实例地址', restart: false },
+    { key: 'write-mode', value: 'ASYNC', type: 'STRING', group: 'WRITE', desc: 'ASYNC 入队写库，SYNC 业务线程直接写库', restart: false },
+    { key: 'queue.capacity', value: '10000', type: 'INT', group: 'WRITE', desc: '有界队列容量，修改后需重启', restart: true },
+    { key: 'batch.size', value: '50', type: 'INT', group: 'WRITE', desc: '单批最大写入条数', restart: false },
+    { key: 'batch.interval-ms', value: '1000', type: 'LONG', group: 'WRITE', desc: '批量等待间隔（毫秒）', restart: false },
+    { key: 'dedup.window-seconds', value: '300', type: 'INT', group: 'DEDUP', desc: '同一指纹去重窗口（秒）', restart: false },
+    { key: 'dedup.max-entries', value: '10000', type: 'INT', group: 'DEDUP', desc: '去重指纹条目上限', restart: false },
+    { key: 'rate-limit.per-minute', value: '20', type: 'INT', group: 'RATE_LIMIT', desc: '每个告警类型每分钟上限', restart: false },
+    { key: 'rate-limit.sample-factor', value: '10', type: 'INT', group: 'RATE_LIMIT', desc: '超限后每 N 条放行 1 条', restart: false },
+    { key: 'biz.enabled', value: 'true', type: 'BOOL', group: 'BIZ', desc: '是否上报 AlertableException', restart: false },
+    { key: 'error.npe.enabled', value: 'true', type: 'BOOL', group: 'ERROR', desc: '是否上报 NullPointerException', restart: false },
+    { key: 'error.npe.sample-rate', value: '1.0', type: 'DOUBLE', group: 'ERROR', desc: 'NPE 采样率 0~1', restart: false },
+    { key: 'error.stackoverflow.enabled', value: 'true', type: 'BOOL', group: 'ERROR', desc: '是否上报 StackOverflowError', restart: false },
+    { key: 'slow-request.enabled', value: 'true', type: 'BOOL', group: 'SLOW_REQUEST', desc: '是否采集慢请求', restart: false },
+    { key: 'slow-request.threshold-ms', value: '1000', type: 'LONG', group: 'SLOW_REQUEST', desc: '慢请求阈值（毫秒）', restart: false },
+    { key: 'slow-request.ignore-paths', value: '/actuator/**,/health,/favicon.ico', type: 'LIST', group: 'SLOW_REQUEST', desc: '慢请求忽略路径', restart: false }
+  ];
+
+  const services = [
+    { name: 'xk-report', version: 12, instances: ['10.117.32.11:10009', '10.117.32.12:10009'], status: 'ok', updated: '2026-11-12 10:12' },
+    { name: 'xk-order2', version: 8, instances: ['10.117.32.21:8081', '10.117.32.22:8081'], status: 'ok', updated: '2026-11-12 09:40' },
+    { name: 'xk-upms', version: 5, instances: ['10.117.32.31:10005'], status: 'ok', updated: '2026-11-11 18:20' },
+    { name: 'xk-common', version: 3, instances: ['10.117.32.41:10011'], status: 'warn', updated: '2026-11-11 16:02' },
+    { name: 'xk-quartz', version: 4, instances: ['10.117.32.51:30016'], status: 'ok', updated: '2026-11-10 11:30' },
+    { name: 'xk-web-server', version: 2, instances: ['10.117.32.61:10001'], status: 'ok', updated: '2026-11-10 10:15' },
+    { name: 'xk-cn', version: 1, instances: [], status: 'warn', updated: '2026-11-09 15:45' },
+    { name: 'xk-micro-server', version: 1, instances: [], status: 'warn', updated: '2026-11-09 14:20' }
+  ];
+
+  const alertTypes = ['BIZ_EXCEPTION', 'SLOW_REQUEST', 'NULL_POINTER', 'STACK_OVERFLOW', 'HTTP_OUTBOUND'];
+  const alertLevels = ['CRITICAL', 'ERROR', 'WARN'];
+  const alerts = [
+    { id: 1088, time: '2026-11-12 10:31:22', service: 'xk-report', type: 'STACK_OVERFLOW', level: 'CRITICAL', title: 'StackOverflowError: mock stack overflow', uri: '/alert-probe/stack-overflow', cost: 12, trace: '7229ef8df814cbde', repeat: 1, content: 'mock stack overflow from /alert-probe/stack-overflow', exception: 'java.lang.StackOverflowError' },
+    { id: 1087, time: '2026-11-12 10:28:05', service: 'xk-report', type: 'SLOW_REQUEST', level: 'WARN', title: '慢请求: GET /alert-probe/biz3 3012ms', uri: '/alert-probe/biz3', cost: 3012, trace: '3f1c9d2a8b7e6f01', repeat: 3, content: '请求耗时 3012ms，超过阈值 1000ms', exception: '' },
+    { id: 1086, time: '2026-11-12 10:26:44', service: 'xk-order2', type: 'BIZ_EXCEPTION', level: 'ERROR', title: '[ORDER_SYNC_FAIL] 订单同步失败', uri: '/order/sync', cost: 85, trace: '9c2b4e6a1d8f3a77', repeat: 1, content: '渠道返回失败', exception: 'com.middleware.alert.exception.AlertableException' },
+    { id: 1085, time: '2026-11-12 10:21:18', service: 'xk-report', type: 'NULL_POINTER', level: 'ERROR', title: 'NullPointerException: npeerror', uri: '/alert-probe/npe', cost: 4, trace: '5a1d7c3e9b2f8a60', repeat: 2, content: 'npeerror', exception: 'java.lang.NullPointerException' },
+    { id: 1084, time: '2026-11-12 10:16:55', service: 'xk-upms', type: 'SLOW_REQUEST', level: 'WARN', title: '慢请求: GET /user/page 2104ms', uri: '/user/page', cost: 2104, trace: '8e4f2a6c1b9d7e35', repeat: 5, content: '请求耗时 2104ms，超过阈值 1000ms', exception: '' },
+    { id: 1083, time: '2026-11-12 10:10:07', service: 'xk-report', type: 'HTTP_OUTBOUND', level: 'ERROR', title: '出站 HTTP 504: /api/third/query', uri: '/api/third/query', cost: 3001, trace: '1b6d8e2f4a7c9d53', repeat: 1, content: '下游返回 504', exception: 'HttpServerErrorException' },
+    { id: 1082, time: '2026-11-12 09:58:42', service: 'xk-common', type: 'BIZ_EXCEPTION', level: 'ERROR', title: '[COMMON_FILE_MISSING] 对账文件缺失', uri: '/common/reconcile', cost: 23, trace: 'd3a7f1c5e9b2a846', repeat: 1, content: '渠道 A 对账文件缺失', exception: 'com.middleware.alert.exception.AlertableException' },
+    { id: 1081, time: '2026-11-12 09:42:19', service: 'xk-order2', type: 'SLOW_REQUEST', level: 'WARN', title: '慢请求: POST /order/create 1880ms', uri: '/order/create', cost: 1880, trace: '7f2b9d4a6c1e8b50', repeat: 2, content: '请求耗时 1880ms，超过阈值 1000ms', exception: '' },
+    { id: 1080, time: '2026-11-11 22:11:03', service: 'xk-quartz', type: 'BIZ_EXCEPTION', level: 'ERROR', title: '[JOB_FAILED] 定时对账任务失败', uri: 'quartz-job', cost: 120, trace: 'a6c8e2f4b1d7a953', repeat: 1, content: '任务执行异常', exception: 'com.middleware.alert.exception.AlertableException' },
+    { id: 1079, time: '2026-11-11 20:05:48', service: 'xk-report', type: 'SLOW_REQUEST', level: 'WARN', title: '慢请求: GET /report/export 5230ms', uri: '/report/export', cost: 5230, trace: 'c9b3e7a1f5d2b846', repeat: 4, content: '请求耗时 5230ms，超过阈值 1000ms', exception: '' },
+    { id: 1078, time: '2026-11-11 18:22:11', service: 'xk-web-server', type: 'BIZ_EXCEPTION', level: 'ERROR', title: '[WEB_PAY_FAIL] 支付回调处理失败', uri: '/pay/callback', cost: 66, trace: 'e2f8a4c6b1d9e735', repeat: 1, content: '签名校验失败', exception: 'com.middleware.alert.exception.AlertableException' },
+    { id: 1077, time: '2026-11-11 16:40:30', service: 'xk-report', type: 'NULL_POINTER', level: 'ERROR', title: 'NullPointerException: report config null', uri: '/report/config', cost: 3, trace: 'b7d1f9e3a5c2b846', repeat: 6, content: 'report config null', exception: 'java.lang.NullPointerException' }
+  ];
+
+  let currentService = services[0].name;
+  let activeGroup = 'ALL';
+  let selectedServices = new Set(services.map(s => s.name));
+  let currentPage = 1;
+  const pageSize = 8;
+
+  /* ============ 初始化 ============ */
+  services.forEach(service => {
+    service.config = CONFIG_TEMPLATE.map(item => Object.assign({}, item));
+  });
+
+  /* ============ 告警大屏 ============ */
+  const dashTrendData = Array.from({ length: 24 }, (_, i) => {
+    const hour = String(i).padStart(2, '0');
+    const error = [1,0,1,2,1,2,3,2,3,4,3,2,3,4,5,3,2,3,4,3,2,2,1,1][i];
+    const warn = [2,1,1,2,2,3,4,3,2,3,2,2,1,2,3,2,1,2,2,1,2,1,1,2][i];
+    const critical = (i === 10 || i === 14) ? 1 : 0;
+    return { hour, critical, error, warn };
+  });
+
+  const dashTypeData = [
+    { type: 'SLOW_REQUEST', count: 5, color: '#3b82f6' },
+    { type: 'BIZ_EXCEPTION', count: 4, color: '#8b5cf6' },
+    { type: 'NULL_POINTER', count: 2, color: '#ef4444' },
+    { type: 'STACK_OVERFLOW', count: 1, color: '#f59e0b' },
+    { type: 'HTTP_OUTBOUND', count: 1, color: '#10b981' }
+  ];
+
+  const dashServiceData = [
+    { name: 'xk-report', count: 6, critical: 1 },
+    { name: 'xk-order2', count: 2, critical: 0 },
+    { name: 'xk-upms', count: 1, critical: 0 },
+    { name: 'xk-common', count: 1, critical: 0 },
+    { name: 'xk-quartz', count: 1, critical: 0 },
+    { name: 'xk-web-server', count: 1, critical: 0 }
+  ];
+
+  const dashSlowData = [
+    { uri: '/report/export', count: 4, max: 5230 },
+    { uri: '/alert-probe/biz3', count: 3, max: 3012 },
+    { uri: '/user/page', count: 5, max: 2104 },
+    { uri: '/order/create', count: 2, max: 1880 }
+  ];
+
+  let dashRange = '24h';
+  let dashRefreshSeconds = 30;
+  let dashAutoRefresh = true;
+
+  const DASH_RANGE_LABELS = { '1h': '1 小时', '6h': '6 小时', '24h': '24 小时', '7d': '7 天' };
+
+  function setDashRange(range) {
+    dashRange = range;
+    document.querySelectorAll('.dash-range-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.range === range);
+    });
+    document.getElementById('dashTrendTitle').textContent = DASH_RANGE_LABELS[range] + '告警趋势';
+    renderDashTrend();
+    showToast('已切换时间范围：' + DASH_RANGE_LABELS[range]);
+  }
+
+  function toggleAutoRefresh() {
+    if (dashAutoRefresh && dashRefreshSeconds === 30) {
+      dashRefreshSeconds = 60;
+    } else if (dashAutoRefresh && dashRefreshSeconds === 60) {
+      dashAutoRefresh = false;
+      dashRefreshSeconds = 0;
+    } else {
+      dashAutoRefresh = true;
+      dashRefreshSeconds = 30;
+    }
+    updateDashRefreshButton();
+    showToast(dashAutoRefresh ? ('自动刷新已设为 ' + dashRefreshSeconds + 's') : '自动刷新已关闭');
+  }
+
+  function updateDashRefreshButton() {
+    const button = document.getElementById('dashRefreshBtn');
+    if (!button) {
+      return;
+    }
+    button.textContent = dashAutoRefresh ? ('自动刷新 ' + dashRefreshSeconds + 's') : '自动刷新：关闭';
+  }
+
+  function currentDashTrendData() {
+    if (dashRange === '1h') {
+      return dashTrendData.slice(-6);
+    }
+    if (dashRange === '6h') {
+      return dashTrendData.slice(-12);
+    }
+    if (dashRange === '7d') {
+      return dashTrendData.filter((_, index) => index % 4 === 0);
+    }
+    return dashTrendData;
+  }
+
+  function renderDashboard() {
+    const time = new Date().toLocaleString('zh-CN', { hour12: false });
+    document.getElementById('dashTime').textContent = time;
+    updateDashRefreshButton();
+    renderDashKpis();
+    renderDashTrend();
+    renderDashTypes();
+    renderDashServices();
+    renderDashLatest();
+    renderDashHealth();
+    renderDashSlow();
+  }
+
+  function renderDashKpis() {
+    const total = alerts.length;
+    const critical = alerts.filter(a => a.level === 'CRITICAL').length;
+    const error = alerts.filter(a => a.level === 'ERROR').length;
+    const warn = alerts.filter(a => a.level === 'WARN').length;
+    const affected = new Set(alerts.map(a => a.service)).size;
+    const kpis = [
+      { label: '今日告警', value: total },
+      { label: '近 1 小时', value: 6 },
+      { label: '严重', value: critical, color: '#f87171' },
+      { label: '错误', value: error, color: '#fbbf24' },
+      { label: '警告', value: warn, color: '#60a5fa' },
+      { label: '受影响服务', value: affected, color: '#a78bfa' }
+    ];
+    document.getElementById('dashKpis').innerHTML = kpis.map(k => `
+      <div class="dash-kpi">
+        <div class="label">${k.label}</div>
+        <div class="value" style="${k.color ? 'color:' + k.color : ''}">${k.value}</div>
+      </div>`).join('');
+  }
+
+  function renderDashTrend() {
+    const data = currentDashTrendData();
+    const max = Math.max(...data.map(d => d.critical + d.error + d.warn), 1);
+    document.getElementById('dashTrend').innerHTML = data.map((d, index) => {
+      const total = d.critical + d.error + d.warn;
+      const height = Math.max(2, Math.round(total / max * 140));
+      const criticalHeight = total ? Math.round(d.critical / total * height) : 0;
+      const errorHeight = total ? Math.round(d.error / total * height) : 0;
+      const warnHeight = Math.max(0, height - criticalHeight - errorHeight);
+      const label = dashRange === '7d' ? ('D' + (index + 1)) : d.hour;
+      return `<div class="trend-col" title="${label} 共 ${total} 条">
+        ${criticalHeight ? `<div class="seg critical" style="height:${criticalHeight}px"></div>` : ''}
+        ${errorHeight ? `<div class="seg error" style="height:${errorHeight}px"></div>` : ''}
+        ${warnHeight ? `<div class="seg warn" style="height:${warnHeight}px"></div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function renderDashTypes() {
+    const max = Math.max(...dashTypeData.map(t => t.count), 1);
+    document.getElementById('dashTypes').innerHTML = dashTypeData.map(t => `
+      <div class="type-row">
+        <span class="type-name">${t.type}</span>
+        <div class="type-track"><i style="width:${Math.round(t.count / max * 100)}%;background:${t.color}"></i></div>
+        <span class="type-count">${t.count}</span>
+      </div>`).join('');
+  }
+
+  function renderDashServices() {
+    const max = Math.max(...dashServiceData.map(s => s.count), 1);
+    document.getElementById('dashServices').innerHTML = dashServiceData.map(s => `
+      <div class="bar-row">
+        <span class="bar-name" title="${s.name}">${s.name}</span>
+        <div class="bar-track"><i style="width:${Math.round(s.count / max * 100)}%;background:${s.critical ? '#ef4444' : '#3b82f6'}"></i></div>
+        <span class="bar-value">${s.count}</span>
+      </div>`).join('');
+  }
+
+  function renderDashLatest() {
+    document.getElementById('dashLatest').innerHTML = alerts.slice(0, 8).map(alert => `
+      <div class="latest-item" style="cursor:pointer" onclick="openAlertDetail(${alert.id})">
+        <span class="latest-time">${alert.time.substring(11, 16)}</span>
+        <span class="latest-main">
+          <div class="latest-title">${escapeHtml(alert.title)}</div>
+          <div class="latest-meta">${alert.service} · ${alert.type} · ${alert.level}</div>
+        </span>
+      </div>`).join('');
+  }
+
+  function renderDashHealth() {
+    document.getElementById('dashHealth').innerHTML = services.map(service => {
+      const count = alerts.filter(a => a.service === service.name).length;
+      const color = count >= 3 ? '#f87171' : count > 0 ? '#fbbf24' : '#86efac';
+      return `<div class="health-item" title="${service.instances.length} 个实例">
+        <span>${service.name}</span><b style="color:${color}">${count}</b>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDashSlow() {
+    const max = Math.max(...dashSlowData.map(s => s.max), 1);
+    document.getElementById('dashSlow').innerHTML = dashSlowData.map(s => `
+      <div class="bar-row">
+        <span class="bar-name" title="${s.uri}">${s.uri}</span>
+        <div class="bar-track"><i style="width:${Math.round(s.max / max * 100)}%;background:#f59e0b"></i></div>
+        <span class="bar-value">${s.max}ms</span>
+      </div>`).join('');
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+      }
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+
+  function init() {
+    renderServiceOptions();
+    renderServiceList();
+    renderGroupTabs();
+    renderConfig();
+    renderServiceChips();
+    renderAlerts();
+    renderDashboard();
+  }
+
+  /* ============ 导航 ============ */
+  function switchPage(page) {
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === page);
+    });
+    const title = document.getElementById('pageTitle');
+    const subtitle = document.getElementById('pageSubtitle');
+    if (page === 'dashboard') {
+      title.textContent = '告警大屏';
+      subtitle.textContent = '跨服务告警态势、趋势与实时告警流';
+    } else if (page === 'config') {
+      title.textContent = '告警配置';
+      subtitle.textContent = '按服务查看和调整告警参数，保存后可刷新指定服务';
+    } else {
+      title.textContent = '告警列表';
+      subtitle.textContent = '跨服务查询 alert_info 告警内容';
+    }
+  }
+
+  /* ============ 告警配置 ============ */
+  function getService(name) {
+    return services.find(item => item.name === name);
+  }
+
+  function currentServiceData() {
+    return getService(currentService);
+  }
+
+  function renderServiceOptions() {
+    const select = document.getElementById('serviceSelect');
+    select.innerHTML = services.map(service =>
+      `<option value="${service.name}">${service.name}</option>`
+    ).join('');
+    select.value = currentService;
+  }
+
+  function renderServiceList() {
+    const container = document.getElementById('serviceList');
+    container.innerHTML = services.map(service => {
+      const active = service.name === currentService ? 'active' : '';
+      const statusClass = service.status === 'ok' ? 'green' : 'orange';
+      const statusText = service.status === 'ok' ? '正常' : '待关注';
+      return `<div class="service-item ${active}" onclick="selectService('${service.name}')">
+        <div class="service-name">${service.name}
+          <span class="badge ${statusClass}">${statusText}</span>
+        </div>
+        <div class="service-meta">
+          <span>v${service.version}</span>
+          <span>${service.instances.length} 实例</span>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('serviceCount').textContent = services.length + ' 个';
+  }
+
+  function selectService(name) {
+    currentService = name;
+    activeGroup = 'ALL';
+    document.getElementById('serviceSelect').value = name;
+    renderServiceList();
+    renderGroupTabs();
+    renderConfig();
+  }
+
+  function renderGroupTabs() {
+    document.getElementById('groupTabs').innerHTML = GROUPS.map(group => {
+      const active = group.key === activeGroup ? 'active' : '';
+      return `<button class="group-tab ${active}" onclick="setGroup('${group.key}')">${group.label}</button>`;
+    }).join('');
+  }
+
+  function setGroup(group) {
+    activeGroup = group;
+    renderGroupTabs();
+    renderConfig();
+  }
+
+  function renderConfig() {
+    const service = currentServiceData();
+    if (!service) return;
+    document.getElementById('configServiceName').textContent = service.name;
+    document.getElementById('configServiceDesc').textContent =
+      `配置版本 ${service.version} · ${service.instances.length} 个实例 · 最近更新 ${service.updated}`;
+    document.getElementById('serviceMeta').textContent =
+      `${service.instances.length} 个实例 · 版本 ${service.version}`;
+    document.getElementById('configStatus').textContent = service.status === 'ok' ? '已初始化' : '需关注';
+    document.getElementById('configStatus').className = 'badge ' + (service.status === 'ok' ? 'green' : 'orange');
+
+    const items = service.config.filter(item => activeGroup === 'ALL' || item.group === activeGroup);
+    document.getElementById('configBody').innerHTML = items.map(item => {
+      const input = item.type === 'BOOL'
+        ? `<select class="config-select" onchange="updateConfig('${item.key}', this.value)">
+             <option value="true" ${item.value === 'true' ? 'selected' : ''}>true</option>
+             <option value="false" ${item.value === 'false' ? 'selected' : ''}>false</option>
+           </select>`
+        : item.type === 'LIST'
+          ? `<textarea class="config-input" rows="2" onchange="updateConfig('${item.key}', this.value)">${item.value}</textarea>`
+          : `<input class="config-input" value="${item.value}" onchange="updateConfig('${item.key}', this.value)">`;
+      const tags = [];
+      if (item.restart) tags.push('<span class="badge orange">需重启</span>');
+      if (item.missing) tags.push('<span class="badge gray">未初始化</span>');
+      return `<tr>
+        <td>
+          <div class="config-key">${item.key}</div>
+          <div class="config-desc">${item.desc}</div>
+        </td>
+        <td>${input}</td>
+        <td class="mono">${item.effectiveValue == null ? (item.value || '-') : item.effectiveValue}</td>
+        <td><span class="badge gray">${item.type}</span></td>
+        <td>${tags.join(' ') || '<span class="hint">—</span>'}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="5" class="empty">当前分组没有配置项</td></tr>';
+  }
+
+  function updateConfig(key, value) {
+    const service = currentServiceData();
+    const item = service.config.find(c => c.key === key);
+    if (item) {
+      item.value = value;
+      item.effectiveValue = value;
+    }
+  }
+
+  function saveConfig(andRefresh) {
+    const service = currentServiceData();
+    service.version += 1;
+    service.updated = new Date().toLocaleString('zh-CN', { hour12: false });
+    renderServiceList();
+    renderConfig();
+    showToast(`已保存 ${service.name} 配置，版本 ${service.version}`);
+    if (andRefresh) {
+      refreshService();
+    }
+  }
+
+  function refreshService() {
+    const service = currentServiceData();
+    const results = service.instances.length
+      ? service.instances.map((instance, index) => ({
+          instance,
+          success: index !== service.instances.length - 1 || service.status === 'ok',
+          cost: 10 + index * 8,
+          message: index === service.instances.length - 1 && service.status !== 'ok'
+            ? 'read timeout'
+            : '配置已重新加载'
+        }))
+      : [{ instance: '未配置实例', success: false, cost: 0, message: 'console.instances 为空，只能重启' }];
+    document.getElementById('refreshResults').innerHTML = results.map(item => `
+      <div class="refresh-item">
+        <div>
+          <div class="mono">${item.instance}</div>
+          <div class="hint">${item.message}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge ${item.success ? 'green' : 'red'}">${item.success ? '成功' : '失败'}</span>
+          <div class="hint">${item.cost}ms</div>
+        </div>
+      </div>
+    `).join('');
+    showToast(`已刷新 ${service.name} 的 ${results.length} 个实例`);
+  }
+
+  /* ============ 告警列表 ============ */
+  function renderServiceChips() {
+    document.getElementById('serviceChips').innerHTML = services.map(service => {
+      const active = selectedServices.has(service.name) ? 'active' : '';
+      return `<button class="chip ${active}" onclick="toggleService('${service.name}')">${service.name}</button>`;
+    }).join('');
+  }
+
+  function toggleService(name) {
+    if (selectedServices.has(name)) {
+      selectedServices.delete(name);
+    } else {
+      selectedServices.add(name);
+    }
+    renderServiceChips();
+    renderAlerts();
+  }
+
+  function resetFilters() {
+    selectedServices = new Set(services.map(s => s.name));
+    document.getElementById('alertType').value = '';
+    document.getElementById('alertLevel').value = '';
+    document.getElementById('alertRange').value = '24h';
+    document.getElementById('alertKeyword').value = '';
+    currentPage = 1;
+    renderServiceChips();
+    renderAlerts();
+  }
+
+  function filteredAlerts() {
+    const type = document.getElementById('alertType').value;
+    const level = document.getElementById('alertLevel').value;
+    const range = document.getElementById('alertRange').value;
+    const keyword = document.getElementById('alertKeyword').value.trim().toLowerCase();
+    const now = new Date('2026-11-12T10:35:00+08:00').getTime();
+    return alerts.filter(alert => {
+      if (selectedServices.size && !selectedServices.has(alert.service)) return false;
+      if (type && alert.type !== type) return false;
+      if (level && alert.level !== level) return false;
+      if (range !== 'all') {
+        const time = new Date(alert.time.replace(' ', 'T') + '+08:00').getTime();
+        const limit = range === '24h' ? 24 * 3600 * 1000 : 7 * 24 * 3600 * 1000;
+        if (now - time > limit) return false;
+      }
+      if (keyword) {
+        const text = [alert.title, alert.uri, alert.trace, alert.service].join(' ').toLowerCase();
+        if (!text.includes(keyword)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderStats(list) {
+    const data = list || filteredAlerts();
+    const critical = data.filter(a => a.level === 'CRITICAL').length;
+    const error = data.filter(a => a.level === 'ERROR').length;
+    const warn = data.filter(a => a.level === 'WARN').length;
+    document.getElementById('alertStats').innerHTML = [
+      { label: '告警总数', value: data.length, cls: '' },
+      { label: '严重', value: critical, cls: 'color:#b91c1c' },
+      { label: '错误', value: error, cls: 'color:#b45309' },
+      { label: '警告', value: warn, cls: 'color:#1d4ed8' }
+    ].map(item => `<div class="stat">
+      <div class="stat-label">${item.label}</div>
+      <div class="stat-value" style="${item.cls}">${item.value}</div>
+    </div>`).join('');
+  }
+
+  function typeBadge(type) {
+    const map = {
+      BIZ_EXCEPTION: 'blue',
+      SLOW_REQUEST: 'orange',
+      NULL_POINTER: 'red',
+      STACK_OVERFLOW: 'purple',
+      HTTP_OUTBOUND: 'gray'
+    };
+    return `<span class="badge ${map[type] || 'gray'}">${type}</span>`;
+  }
+
+  function levelBadge(level) {
+    const map = { CRITICAL: 'red', ERROR: 'red', WARN: 'orange', INFO: 'gray' };
+    return `<span class="badge ${map[level] || 'gray'}">${level}</span>`;
+  }
+
+  function renderAlerts() {
+    const list = filteredAlerts();
+    const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * pageSize;
+    const pageList = list.slice(start, start + pageSize);
+
+    document.getElementById('alertBody').innerHTML = pageList.map(alert => `
+      <tr>
+        <td class="mono">${alert.time}</td>
+        <td><strong>${alert.service}</strong></td>
+        <td>${typeBadge(alert.type)}</td>
+        <td>${levelBadge(alert.level)}</td>
+        <td>
+          <div class="alert-title">${escapeHtml(alert.title)}</div>
+          <div class="alert-sub">traceId: ${alert.trace} · 重复 ${alert.repeat} 次</div>
+        </td>
+        <td class="mono">${alert.uri}</td>
+        <td class="mono">${alert.cost}ms</td>
+        <td><a class="link" onclick="openAlertDetail(${alert.id})">详情</a></td>
+      </tr>
+    `).join('') || '<tr><td colspan="8" class="empty">没有匹配的告警</td></tr>';
+
+    document.getElementById('pageInfo').textContent =
+      `共 ${list.length} 条 · 第 ${currentPage} / ${totalPages} 页`;
+    document.getElementById('prevBtn').disabled = currentPage <= 1;
+    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    renderStats(list);
+  }
+
+  function prevPage() {
+    if (currentPage > 1) {
+      currentPage--;
+      renderAlerts();
+    }
+  }
+
+  function nextPage() {
+    const totalPages = Math.max(1, Math.ceil(filteredAlerts().length / pageSize));
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderAlerts();
+    }
+  }
+
+  function openAlertDetail(id) {
+    const alert = alerts.find(item => item.id === id);
+    if (!alert) return;
+    document.getElementById('drawerBody').innerHTML = `
+      <div style="margin-bottom:14px">
+        ${typeBadge(alert.type)} ${levelBadge(alert.level)}
+        <span class="badge gray">${alert.service}</span>
+      </div>
+      <dl class="detail-grid">
+        <dt>标题</dt><dd>${escapeHtml(alert.title)}</dd>
+        <dt>告警时间</dt><dd class="mono">${alert.time}</dd>
+        <dt>请求 URI</dt><dd class="mono">${alert.uri}</dd>
+        <dt>耗时</dt><dd>${alert.cost}ms</dd>
+        <dt>traceId</dt><dd class="mono">${alert.trace}</dd>
+        <dt>重复次数</dt><dd>${alert.repeat}</dd>
+        <dt>异常类型</dt><dd class="mono">${alert.exception || '-'}</dd>
+        <dt>内容</dt><dd>${escapeHtml(alert.content)}</dd>
+      </dl>
+      <h4 style="margin:18px 0 8px;font-size:13px;color:#475569">堆栈 / 扩展信息</h4>
+      <div class="code-block">${escapeHtml(alert.type === 'STACK_OVERFLOW'
+        ? 'java.lang.StackOverflowError: mock stack overflow\n    at .../AlertProbeController.stackOverflow(AlertProbeController.java:96)\n    at ...'
+        : '（原型演示，实际从 alert_info.stack_trace / extra 读取）')}</div>
+    `;
+    document.getElementById('drawerMask').classList.add('show');
+    document.getElementById('drawer').classList.add('show');
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawerMask').classList.remove('show');
+    document.getElementById('drawer').classList.remove('show');
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  let toastTimer;
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  init();
+</script>
+</body>
+</html>
