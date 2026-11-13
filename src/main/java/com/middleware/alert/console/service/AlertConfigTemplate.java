@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 新应用初始化模板，与 db/alert_config.sql 的 35 项默认配置保持一致。
+ * 新应用初始化模板，与 db/{kingbase,mysql}/alert_config.sql 的 35 项默认配置保持一致。
  */
 public final class AlertConfigTemplate {
 

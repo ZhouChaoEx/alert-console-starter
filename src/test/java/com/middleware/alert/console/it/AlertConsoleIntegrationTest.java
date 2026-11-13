@@ -1,15 +1,21 @@
 package com.middleware.alert.console.it;
 
+import com.middleware.alert.config.AlertJdbcAccess;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.sql.DataSource;
 import java.sql.Timestamp;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         properties = {
                 "spring.application.name=console-it",
+                "alert.enabled=true",
                 "spring.autoconfigure.exclude="
                         + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
                         + "org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration,"
@@ -41,6 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 )
 @AutoConfigureMockMvc
 @Sql(scripts = "/console-schema-h2.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Import(AlertConsoleIntegrationTest.TestDataSourceConfig.class)
 class AlertConsoleIntegrationTest {
 
     private static final String APP = "console-it";
@@ -50,7 +58,11 @@ class AlertConsoleIntegrationTest {
 
     @Autowired
     @Qualifier("alertJdbcTemplate")
-    private JdbcTemplate jdbcTemplate;
+    private AlertJdbcAccess alertJdbcAccess;
+
+    private JdbcTemplate jdbcTemplate() {
+        return alertJdbcAccess.jdbcTemplate();
+    }
 
     @Test
     void pageRouteForwardsToIndex() throws Exception {
@@ -228,14 +240,30 @@ class AlertConsoleIntegrationTest {
 
     private long insertAlert(String app, String type, String level, String title,
                              String uri, long cost, Timestamp alertTime) {
-        jdbcTemplate.update(
+        jdbcTemplate().update(
                 "INSERT INTO alert_info (app_name, alert_type, alert_level, title, request_uri, "
                         + "cost_ms, trace_id, fingerprint, repeat_count, first_time, alert_time) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 app, type, level, title, uri, cost, "trace-" + app,
                 app + "|" + type + "|" + uri + "|" + alertTime.getTime(), 1,
                 alertTime, alertTime);
-        Long id = jdbcTemplate.queryForObject("SELECT MAX(id) FROM alert_info", Long.class);
+        Long id = jdbcTemplate().queryForObject("SELECT MAX(id) FROM alert_info", Long.class);
         return id == null ? 0L : id;
+    }
+
+    /**
+     * {@code @Sql} 需要容器里有一个 DataSource；告警数据源不再暴露成该类型，这里补一个业务库。
+     */
+    @TestConfiguration
+    static class TestDataSourceConfig {
+
+        @Bean(name = "dataSource")
+        public DataSource dataSource() {
+            HikariDataSource dataSource = new HikariDataSource();
+            dataSource.setJdbcUrl("jdbc:h2:mem:consoleit;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
+            dataSource.setUsername("sa");
+            dataSource.setPassword("");
+            return dataSource;
+        }
     }
 }

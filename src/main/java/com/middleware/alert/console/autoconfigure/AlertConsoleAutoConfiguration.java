@@ -4,6 +4,7 @@ import com.middleware.alert.autoconfigure.AlertAutoConfiguration;
 import com.middleware.alert.autoconfigure.AlertPersistenceAutoConfiguration;
 import com.middleware.alert.config.AlertConfigLoader;
 import com.middleware.alert.config.AlertConfigProvider;
+import com.middleware.alert.config.AlertJdbcAccess;
 import com.middleware.alert.console.config.AlertConsoleProperties;
 import com.middleware.alert.console.service.AlertConsoleService;
 import com.middleware.alert.console.service.AlertEffectiveService;
@@ -47,11 +48,11 @@ public class AlertConsoleAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AlertConsoleService alertConsoleService(
-            @Qualifier("alertJdbcTemplate") JdbcTemplate jdbcTemplate,
+            @Qualifier("alertJdbcTemplate") AlertJdbcAccess jdbcAccess,
             AlertConfigProvider alertConfigProvider,
             ObjectProvider<AlertConfigLoader> configLoaderProvider,
             AlertContext alertContext) {
-        return new AlertConsoleService(jdbcTemplate, alertConfigProvider,
+        return new AlertConsoleService(jdbcAccess.jdbcTemplate(), alertConfigProvider,
                 configLoaderProvider, alertContext);
     }
 
@@ -75,8 +76,8 @@ public class AlertConsoleAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AlertQueryService alertQueryService(
-            @Qualifier("alertJdbcTemplate") JdbcTemplate jdbcTemplate) {
-        return new AlertQueryService(jdbcTemplate);
+            @Qualifier("alertJdbcTemplate") AlertJdbcAccess jdbcAccess) {
+        return new AlertQueryService(jdbcAccess.jdbcTemplate());
     }
 
     @Bean

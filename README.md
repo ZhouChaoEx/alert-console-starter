@@ -12,23 +12,28 @@
 
 ## 接入
 
-先安装或部署 `alert-starter:1.0.0`，再引入：
+先安装或部署 `alert-starter:1.0.2`，再引入：
 
 ```xml
 <dependency>
     <groupId>com.middleware.alert</groupId>
     <artifactId>alert-console-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
-配置：
+配置（告警库二选一：Kingbase 或 MySQL）：
 
 ```properties
 alert.enabled=true
+# Kingbase
 alert.datasource.url=jdbc:kingbase8://host:54321/pv?currentSchema=alert
+# MySQL
+# alert.datasource.url=jdbc:mysql://host:3306/alert_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
 alert.datasource.username=alert_writer
 alert.datasource.password=ENC(....)
+# 驱动类名可留空，按 URL 推断（com.kingbase8.Driver / com.mysql.cj.jdbc.Driver）
+# alert.datasource.driver-class-name=
 alert.config.enabled=true
 
 # 开启管理页面
@@ -48,8 +53,12 @@ http://host:业务端口/alert-console/
 管理页面运行在业务应用内，复用 `alert.datasource`，所以应用账号需要：
 
 ```sql
+-- Kingbase：告警表 INSERT + 序列权限
 GRANT INSERT ON alert_info TO <应用账号>;
 GRANT USAGE, SELECT ON SEQUENCE alert_info_id_seq TO <应用账号>;
+-- MySQL：告警表 INSERT（无需序列权限）
+-- GRANT INSERT ON alert_info TO '<应用账号>'@'%';
+
 -- 引入 alert-console-starter 后
 GRANT SELECT, INSERT, UPDATE ON alert_config TO <应用账号>;
 ```
