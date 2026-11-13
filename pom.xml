@@ -12,7 +12,7 @@
 
     <groupId>com.middleware.alert</groupId>
     <artifactId>alert-console-starter</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <name>alert-console-starter</name>
     <description>告警配置管理页面 starter，随业务应用启动并复用业务端口</description>
 
@@ -21,7 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- 依赖版本集中管理 -->
-        <alert-starter.version>1.0.2</alert-starter.version>
+        <alert-starter.version>1.0.3</alert-starter.version>
         <maven-surefire.version>3.1.2</maven-surefire.version>
     </properties>
 

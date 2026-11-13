@@ -12,13 +12,13 @@
 
 ## 接入
 
-先安装或部署 `alert-starter:1.0.2`，再引入：
+先安装或部署 `alert-starter:1.0.3`，再引入：
 
 ```xml
 <dependency>
     <groupId>com.middleware.alert</groupId>
     <artifactId>alert-console-starter</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
 </dependency>
 ```
 
